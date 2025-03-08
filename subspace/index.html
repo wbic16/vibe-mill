@@ -40,6 +40,9 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@latest/example
 // Create scene
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+const cubes = [];
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
 camera.position.z = 10;
 camera.position.y = 5;
@@ -119,46 +122,21 @@ function visualizeSubspace(text) {
         cube.scale.x = Math.sqrt(c.book*c.book/100);
         // console.log(`Adding cube at (${cx}, ${cy}, ${cz}) -> ${c.library}.${c.shelf}.${c.series}/${c.collection}.${c.volume}.${c.book}/${c.chapter}.${c.section}.${c.scroll}:${c.index}`);
         scene.add(cube);
+        cubes.push(cube);
     });
 }
-
-// Example string
-// 
-// a group of libraries
-visualizeSubspace("\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01");
-
-// a group of shelves
-visualizeSubspace("\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f");
-
-// a group of series
-visualizeSubspace("\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e");
-
-// a group of collections
-visualizeSubspace("\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d");
-
-// a group of volumes
-visualizeSubspace("\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c");
-
-// a group of books
-visualizeSubspace("\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a");
-
-// a group of chapters
-visualizeSubspace("\x19\x19\x19\x19\x19\x19\x19\x19\x19\x19");
-
-// a group of sections
-visualizeSubspace("\x18\x18\x18\x18\x18\x18\x18\x18\x18\x18");
-
-// a group of scrolls
-visualizeSubspace("\x17\x17\x17\x17\x17\x17\x17\x17\x17\x17");
-
-// content at 3.4.5/6.7.5/4.4.4 and 6.1.1/1.1.1/1.1.1
-visualizeSubspace("\x01\x01\x1f\x1f\x1f\x1e\x1e\x1e\x1e\x1d\x1d\x1d\x1d\x1d\x1d\x1c\x1c\x1c\x1c\x1c\x1c\x1a\x1a\x1a\x1a\x19\x19\x19\x18\x18\x18\x17\x17\x17xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\x01\x01\x01xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+const params = new Proxy(new URLSearchParams(window.location.search), {
+  get: (searchParams, prop) => searchParams.get(prop),
+});
+const subspace = params.subspace || `\x01\x01\x01\x01\x01\x01\x01\x01\x01x\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1fx\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1ex\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1dx\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1cx\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1ax\x19\x19\x19\x19\x19\x19\x19\x19\x19x\x17\x17\x17\x17\x17\x17\x17\x17\x17x\x18\x18\x17\x17\x17\x19\x19\x19\x19\x1a\x1a\x1a\x1a\x1a\x1c\x1c\x1c\x1c\x1c\x1c\x1d\x1d\x1d\x1d\x1e\x1e\x1e\x1f\x1f\x1f\x01\x01\x01Content\x18\x18\x18\x18Content\x18\x18\x18\x18x\x17\x17\x17\x17\x17\x17\x17\x17\x17\x19\x19\x19\x19\x19\x19\x19\x19\x19\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1a\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1c\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1d\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1e\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x1f\x01\x01\x01\x01\x01\x01\x01\x01\x01x`;
+visualizeSubspace(subspace);
 
 function animate() {
     requestAnimationFrame(animate);
     renderer.render(scene, camera);
 }
 animate();
+
 </script>
 </body>
 </html>
