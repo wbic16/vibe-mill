@@ -19,7 +19,10 @@
   {
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
-      "three/examples/jsm/controls/OrbitControls": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/controls/OrbitControls.js"
+      "three/examples/jsm/controls/OrbitControls": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/controls/EffectComposer": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/postprocessing/EffectComposer.js",
+      "three/examples/jsm/controls/RenderPass": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/postprocessing/RenderPass.js",
+      "three/examples/jsm/controls/UnrealBloomPass": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/postprocessing/UnrealBloomPass.js"
     }
   }
   </script>
@@ -34,8 +37,11 @@
 
 <h1>Phext Subspace Explorer</h1>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { EffectComposer } from 'three/examples/jsm/controls/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/controls/RenderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/controls/UnrealBloomPass';
 
 // Create scene
 const scene = new THREE.Scene();
@@ -48,12 +54,33 @@ camera.position.z = 10;
 camera.position.y = 5;
 camera.position.x = 5;
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.rotateSpeed = 0.6;
+controls.zoomSpeed = 0.42;
+controls.panSpeed = 0.5; 
+
+const composer = new EffectComposer(renderer);
+
+const renderPass = new RenderPass(scene, camera);
+
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  15,    // bloom strength
+  32.0,    // bloom radius
+  5.85    // bloom threshold
+);
+
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
 
 class phextCoordinate {
 constructor() {
@@ -87,24 +114,42 @@ function visualizeSubspace(text) {
     var cx = 0.0;
     var index = 1;
     var c = new phextCoordinate();
+    const frostedMaterial = new THREE.MeshPhysicalMaterial({ 
+      color: 0xfefefe,
+      opacity: 0.5, 
+      transparent: true,
+      roughness: 0.1,
+      metalness: 0.5,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
     text.split('').forEach((char, ignored) => {
         const geometry = new THREE.BoxGeometry();
         
         var color = 0x413287;
+        var emissiveColor = 0x782314;
         var rift = false;
-        if (char == 'x') { color = 0x848484; }
-        if (char == 'y') { color = 0x9f9f9f; }
-        if (char == 'z') { color = 0xabefab; }
-        if (char == '\x17') { color = 0x0000ff; c.scrollBreak(); rift = true; }
-        if (char == '\x18') { color = 0x0000cc; c.sectionBreak(); rift = true; }
-        if (char == '\x19') { color = 0x0000aa; c.chapterBreak(); rift = true; }
-        if (char == '\x1a') { color = 0x00ff00; c.bookBreak(); rift = true; }
-        if (char == '\x1c') { color = 0x00cc00; c.volumeBreak(); rift = true; }
-        if (char == '\x1d') { color = 0x00aa00; c.collectionBreak(); rift = true; }
-        if (char == '\x1e') { color = 0xff0000; c.seriesBreak(); rift = true; }
-        if (char == '\x1f') { color = 0xcc0000; c.shelfBreak(); rift = true; }
-        if (char == '\x01') { color = 0xaa0000; c.libraryBreak(); rift = true; }
-        const material = new THREE.MeshBasicMaterial({ color: color });
+        if (char == 'x') { color = 0x848484; emissiveColor = 0xababab; }
+        if (char == 'y') { color = 0x9f9f9f; emissiveColor = 0xcbcbcb; }
+        if (char == 'z') { color = 0xabefab; emissiveColor = 0xbafeba; }
+        if (char == '\x17') { color = 0x0000ff; emissiveColor = 0x4444ff; c.scrollBreak(); rift = true; }
+        if (char == '\x18') { color = 0x0000cc; emissiveColor = 0x2222cc; c.sectionBreak(); rift = true; }
+        if (char == '\x19') { color = 0x0000aa; emissiveColor = 0x0000aa; c.chapterBreak(); rift = true; }
+        if (char == '\x1a') { color = 0x00ff00; emissiveColor = 0x44ff44; c.bookBreak(); rift = true; }
+        if (char == '\x1c') { color = 0x00cc00; emissiveColor = 0x22cc22; c.volumeBreak(); rift = true; }
+        if (char == '\x1d') { color = 0x00aa00; emissiveColor = 0x00aa00; c.collectionBreak(); rift = true; }
+        if (char == '\x1e') { color = 0xff0000; emissiveColor = 0xff4444; c.seriesBreak(); rift = true; }
+        if (char == '\x1f') { color = 0xcc0000; emissiveColor = 0xcc2222; c.shelfBreak(); rift = true; }
+        if (char == '\x01') { color = 0xaa0000; emissiveColor = 0xaa0000; c.libraryBreak(); rift = true; }
+
+        const material = new THREE.MeshStandardMaterial({ 
+          color: color,
+          emissive: emissiveColor,
+          emissiveIntensity: 0.95,
+          metalness: 3.14,
+          roughness: 0.75
+        });
+
         const cube = new THREE.Mesh(geometry, material);
         
         // map our position in 11D space based upon compressing our coordinates
@@ -123,6 +168,11 @@ function visualizeSubspace(text) {
         // console.log(`Adding cube at (${cx}, ${cy}, ${cz}) -> ${c.library}.${c.shelf}.${c.series}/${c.collection}.${c.volume}.${c.book}/${c.chapter}.${c.section}.${c.scroll}:${c.index}`);
         scene.add(cube);
         cubes.push(cube);
+
+        const frostedCube = new THREE.Mesh(cube.geometry.clone(), frostedMaterial);
+        frostedCube.position.copy(cube.position);
+        scene.add(frostedCube);
+        cubes.push(frostedCube);
     });
 }
 const params = new Proxy(new URLSearchParams(window.location.search), {
@@ -170,13 +220,51 @@ const subspace = params.subspace || `
 \x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17
 \x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17
 \x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17\x18\x19\x17
-`;
+\x01\x1f\x1e\x1d\x1c\x1a\x19\x18\x17
+\x17\x18\x19\x1a\x1c\x1d\x1e\x1f\x01
+\x01\x01\x1f\x1f\x1e\x1e\x1d\x1d\x1c\x1c\x1a\x1a\x19\x19\x18\x18\x17\x17
+\x17\x17\x18\x18\x19\x19\x1a\x1a\x1c\x1c\x1d\x1d\x1e\x1e\x1f\x1f\x01\x01
+\x01\x1e\x1c\x1a\x18\x17\x19\x1d\x1f\x1f\x1d\x19\x17\x18\x1a\x1c\x1e\x01
+\x01\x1d\x1a\x17\x18\x19\x1c\x1f\x1e\x1e\x1f\x1c\x19\x18\x17\x1a\x1d\x01
+\x01\x1c\x18\x19\x17\x1a\x1e\x1d\x1f\x1f\x1d\x1e\x1a\x17\x19\x18\x1c\x01
+\x01\x1a\x19\x17\x18\x1c\x1d\x1e\x1f\x1f\x1e\x1d\x1c\x18\x17\x19\x1a\x01
+\x01\x19\x17\x1a\x1c\x1d\x1e\x1f\x1f\x1e\x1d\x1c\x1a\x17\x18\x19\x01\x01
+\x01\x18\x17\x19\x1a\x1c\x1d\x1e\x1f\x1f\x1e\x1d\x1c\x1a\x19\x17\x18\x01
+\x01\x17\x18\x19\x1a\x1c\x1d\x1e\x1f\x01\x1f\x1e\x1d\x1c\x1a\x19\x18\x17\x01
+`.repeat(3);
 visualizeSubspace(subspace);
 
+var iterationCount = 0;
 function animate() {
     requestAnimationFrame(animate);
-    renderer.render(scene, camera);
+    const time = performance.now() * 0.002;
+    cubes.forEach(cube => {
+      ++iterationCount;
+      if (iterationCount % 1000) {
+        cube.scale.setScalar(1 + 0.1 * Math.sin(time + cube.position.length()));
+      }      
+    });
+    if (iterationCount > 100000) { iterationCount = 0; }
+    controls.update();
+    composer.render();
 }
+
+// Generate stars
+const starGeometry = new THREE.BufferGeometry();
+const starVertices = [];
+for (let i = 0; i < 5000; i++) {
+  starVertices.push(THREE.MathUtils.randFloatSpread(2000)); // x
+  starVertices.push(THREE.MathUtils.randFloatSpread(2000)); // y
+  starVertices.push(THREE.MathUtils.randFloatSpread(2000)); // z
+}
+
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 });
+const starField = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3)), starMaterial);
+scene.add(starField);
+
+// begin animating
 animate();
 
 </script>
